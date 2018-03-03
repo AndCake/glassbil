@@ -45,18 +45,20 @@ export default class Store {
             };
         });
 
-        let actionNames = Object.keys(actions);
-        for (let index = 0, action; action = actions[actionNames[index]], index < actionNames.length; index += 1) {
-            this[actionNames[index]] = function(triggerData) {
-				// for asynchronous cases, provide a next function to handle state
-                // modification
-				let newState = action(data[name].currentData.toJS(), triggerData, this.next.bind(this));
-				// if it was not done asynchronously
-				if (newState) {
-					// directly update the state
-					this.next(newState);
-				}
-            }.bind(this);
+        if (typeof actions === 'object') {
+            let actionNames = Object.keys(actions);
+            for (let index = 0, action; action = actions[actionNames[index]], index < actionNames.length; index += 1) {
+                this[actionNames[index]] = function(triggerData) {
+                    // for asynchronous cases, provide a next function to handle state
+                    // modification
+                    let newState = action(data[name].currentData.toJS(), triggerData, this.next.bind(this));
+                    // if it was not done asynchronously
+                    if (newState) {
+                        // directly update the state
+                        this.next(newState);
+                    }
+                }.bind(this);
+            }
         }
 
         data[name] = data[name] || {
