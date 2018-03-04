@@ -39,9 +39,14 @@ function deepFreeze(obj) {
 export default class Store {
     constructor(name, actions) {
         this.name = name || 'unnamed';
+        this.triggered = false;
         Object.keys(events).forEach(event => {
             this[event] = function (eventName, context)  {
-                events[event](name + '-store:' + eventName, context);
+                if (eventName.indexOf(':') >= 0) {
+                    events[event](eventName, context);
+                } else {
+                    events[event](name + '-store:' + eventName, context);
+                }
             };
         });
 
@@ -61,11 +66,13 @@ export default class Store {
             }
         }
 
-        data[name] = data[name] || {
-            loaded: false,
-            currentData: deepFreeze([]),
-            historicData: []
-        };
+        if (name) {
+            data[name] = data[name] || {
+                loaded: false,
+                currentData: deepFreeze([]),
+                historicData: []
+            };
+        }
     }
 
     get data() {
@@ -73,6 +80,18 @@ export default class Store {
             return data[this.name].currentData.toJS();
         } else {
             return null;
+        }
+    }
+
+    loaded() {
+        let loaded = Object.keys(data).filter(key => data[key].loaded).length;
+        if (loaded === Object.keys(data).length && !this.triggered) {
+            let result = {};
+            Object.keys(data).map(key => {
+                result[key] = data[key].currentData.toJS();
+            });
+            this.triggered = true;
+            trigger('global:data-loaded', result);
         }
     }
 
@@ -87,6 +106,7 @@ export default class Store {
             data[this.name].currentData = newState;
             trigger(this.name + '-store:changed', data[this.name].currentData.toJS());
         }
+        this.loaded();
     }
 
     previous() {
