@@ -1,4 +1,5 @@
-let eventRegistry = {};
+const scope = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
+let eventRegistry = scope.__eventRegistry = scope.__eventRegistry || {};
 
 export function trigger(eventName, data) {
     if (!eventRegistry[eventName]) return;

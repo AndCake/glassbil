@@ -5,7 +5,7 @@ let data = {};
 let trigger = events.trigger;
 
 function mirror() {
-    return this; 
+    return this;
 }
 
 function deepFreeze(obj) {
