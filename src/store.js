@@ -1,7 +1,8 @@
 'use strict';
 
 import * as events from './events';
-let data = {};
+const scope = typeof window !== 'undefined' ? window : {};
+let data = scope.__glassbilStoreData = scope.__glassbilStoreData || {};
 let trigger = events.trigger;
 
 function mirror() {
