@@ -19,6 +19,10 @@ function deepFreeze(obj) {
     let propNames = Object.getOwnPropertyNames(obj);
     let properties = {toJS: {value: mirror.bind(obj)}};
 
+    if (Array.isArray(obj)) {
+        obj = obj.slice(0).map(deepFreeze);
+    }
+
     // Freeze properties before freezing self
     for (let index = 0, prop; prop = obj[propNames[index]], index < propNames.length; index += 1) {
         // Freeze prop if it is an object
@@ -57,7 +61,7 @@ export default class Store {
                 this[actionNames[index]] = function(triggerData) {
                     // for asynchronous cases, provide a next function to handle state
                     // modification
-                    let newState = action(data[name].currentData.toJS(), triggerData, this.next.bind(this));
+                    let newState = action(data[name].currentData, triggerData, this.next.bind(this));
                     // if it was not done asynchronously
                     if (newState) {
                         // directly update the state
@@ -78,7 +82,7 @@ export default class Store {
 
     get data() {
         if (data[this.name]) {
-            return data[this.name].currentData.toJS();
+            return data[this.name].currentData;
         } else {
             return null;
         }
@@ -105,15 +109,15 @@ export default class Store {
                 data[this.name].historicData.shift();
             }
             data[this.name].currentData = newState;
-            trigger(this.name + '-store:changed', data[this.name].currentData.toJS());
+            trigger(this.name + '-store:changed', data[this.name].currentData);
         }
         this.loaded();
     }
 
     previous() {
         if (data[this.name].historicData.length < 1) return;
-        newState = data[this.name].historicData.pop();
+        let newState = data[this.name].historicData.pop();
         data[this.name].currentData = newState;
-        trigger(this.name + '-store:changed', data[this.name].currentData.toJS());
+        trigger(this.name + '-store:changed', data[this.name].currentData);
     }
 }

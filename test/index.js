@@ -32,4 +32,12 @@ describe('Store functionality', () => {
         ts.removed(12);
         expect(eventFired).to.equal(2);
     });
+    it('is able to roll back in history', () => {
+        ts.added('test');
+        ts.added('hello world!');
+        expect(ts.data).to.have.lengthOf(2);
+        ts.previous();
+        expect(ts.data).to.have.lengthOf(1);
+        expect(ts.data[0]).to.equal('test');
+    });
 });

@@ -4,15 +4,17 @@ export default class TestStore extends Store {
     constructor() {
         super('test', {
             added(currentState, entry, next) {
-                currentState.push(entry);
-                return currentState;
+                let newState = currentState.toJS();
+                newState.push(entry);
+                return newState;
             },
             removed(currentState, id, next) {
-                let found = currentState.find(el => el.id === id);
+                var newState = currentState.toJS();
+                let found = newState.find(el => el.id === id);
                 if (found) {
-                    currentState.splice(currentState.indexOf(found), 1);
+                    newState.splice(newState.indexOf(found), 1);
                 }
-                next(currentState);
+                next(newState);
             }
         });
     }
