@@ -1,6 +1,6 @@
 {
   "name": "glassbil",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "module": "src/store.js",
   "main": "dist/main.js",
