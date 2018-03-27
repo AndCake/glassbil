@@ -20,7 +20,12 @@ function deepFreeze(obj) {
     let properties = {toJS: {value: mirror.bind(obj)}};
 
     if (Array.isArray(obj)) {
+        // create a copy and deep freeze all entries
         obj = obj.slice(0).map(deepFreeze);
+        // re-attach some important methods
+        ['map', 'forEach', 'find', 'indexOf', 'filter', 'some', 'every'].forEach(fn => {
+            properties[fn] = {value: Array.prototype[fn].bind(obj)};
+        });
     }
 
     // Freeze properties before freezing self
@@ -41,6 +46,12 @@ function deepFreeze(obj) {
     return Object.freeze(Object.create(Object.getPrototypeOf(obj), properties));
 }
 
+function bind(fn, self, lastParam) {
+    return function boundFunction(data) {
+        return fn.call(self, data, lastParam);
+    }
+}
+
 export default class Store {
     constructor(name, actions) {
         this.name = name || 'unnamed';
@@ -55,28 +66,32 @@ export default class Store {
             };
         });
 
-        if (typeof actions === 'object') {
-            let actionNames = Object.keys(actions);
-            for (let index = 0, action; action = actions[actionNames[index]], index < actionNames.length; index += 1) {
-                this[actionNames[index]] = function(triggerData) {
-                    // for asynchronous cases, provide a next function to handle state
-                    // modification
-                    let newState = action(data[name].currentData, triggerData, this.next.bind(this));
-                    // if it was not done asynchronously
-                    if (newState) {
-                        // directly update the state
-                        this.next(newState);
-                    }
-                }.bind(this);
-            }
-        }
+        this.actions(actions);
 
         if (name) {
             data[name] = data[name] || {
                 loaded: false,
-                currentData: deepFreeze([]),
-                historicData: []
+                currentData: deepFreeze([])
             };
+        }
+    }
+
+    actions(actionDefinitions) {
+        if (!actionDefinitions || typeof actionDefinitions !== 'object') return;
+        let actionNames = Object.keys(actionDefinitions);
+        for (let index = 0, action; action = actionDefinitions[actionNames[index]], index < actionNames.length; index += 1) {
+            (function(actionName) {
+                this[actionName] = function(triggerData) {
+                    // for asynchronous cases, provide a next function to handle state
+                    // modification
+                    let newState = action(data[this.name].currentData, triggerData, bind(this.next, this, actionName));
+                    // if it was not done asynchronously
+                    if (typeof newState !== 'undefined') {
+                        // directly update the state
+                        this.next(newState, actionName);
+                    }
+                }.bind(this);
+            }.call(this, actionNames[index]))
         }
     }
 
@@ -100,24 +115,13 @@ export default class Store {
         }
     }
 
-    next(newState) {
+    next(newState, actionName) {
         data[this.name].loaded = true;
         newState = deepFreeze(newState);
         if (newState !== data[this.name].currentData) {
-            data[this.name].historicData.push(data[this.name].currentData);
-            while (data[this.name].historicData.length > 10) {
-                data[this.name].historicData.shift();
-            }
             data[this.name].currentData = newState;
-            trigger(this.name + '-store:changed', data[this.name].currentData);
+            trigger(this.name + '-store:changed', data[this.name].currentData, actionName);
         }
         this.loaded();
-    }
-
-    previous() {
-        if (data[this.name].historicData.length < 1) return;
-        let newState = data[this.name].historicData.pop();
-        data[this.name].currentData = newState;
-        trigger(this.name + '-store:changed', data[this.name].currentData);
     }
 }

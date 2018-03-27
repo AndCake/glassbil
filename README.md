@@ -1,55 +1,132 @@
+![Glassbil](https://www.iconfinder.com/icons/67974/download/png/256)
 # glassbil
 
 A minimal store similar to redux or flux
+
+* Small footprint
+* Framework agnostic
+* Immutable - by default
+* Portable - actions can be moved to a common place and imported
 
 Installation
 ------------
 
 ```
-  $ npm install glassbil
+  $ npm install --save glassbil
+```
+
+Then with a modern bundler like [webpack](https://webpack.js.org/) or [rollup](http://rollupjs.org/) use it as you would use anything else:
+
+```js
+// import the base store
+import Store from 'glassbil';
+
+// create your custom store
+export default class MyStore extends Store {
+
+  constructor() {
+    // give it a proper name
+    super('mystore');
+
+    // define your actions
+    this.actions({
+      // 'added' action
+      added(currentState, dataAdded, next) {
+        // create new state from current one
+        let newState = currentState.toJS();
+        // add the additional data to the new state
+        newState.push(dataAdded);
+
+        // optionally, transfer data to the server
+        // for asynchronous store updates use
+        // next(newState);
+        // instead of
+        // return newState;
+
+        // return the new state
+        return newState;
+      },
+
+      removed(currentState, id, next) {
+        var newState = currentState.toJS();
+        // locate the element with the provided ID
+        let found = newState.find(el => el.id === id);
+        if (found) {
+            // remove it from the new state
+            newState.splice(newState.indexOf(found), 1);
+        }
+        return newState;
+      },
+
+      // additional actions
+      // ...
+    });
+  }
+}
 ```
 
 Usage
 -----
 
-The following provides a simple example of how to define a custom store, extend from the glassbil store and use asynchronous state changes.
+```js
+import MyStore from './my-store';
 
-my-store.js:
-```
-  import Store from 'glassbil';
-  
-  export default class MyStore extends Store {
-    constructor() {
-      super('mystore', {
-        // here is our list of actions - every function receives three arguments: the store's current state
-        // the data transferred to the action when called and a next function that can be called 
-        // to set the new state in the store.
-        added(currentState, dataAdded, next) {
-          // update current state to also contain the data added
-          currentState.push(dataAdded);
-          fetch('/my-server-url', {method: 'post', body: dataAdded}).then(response => response.json()).then(message => {
-            if (message.success) {
-              // if the server said everthing is alright
-              // store the new current state
-              next(currentState);
-            }
-          });
-        }
-      });
-    }
+const store = new MyStore();
+const taskList = document.querySelector('.task-list');
+
+// listen for events that changed the store contents
+store.on('changed', function(data) {
+  // re-render our elements
+	taskList.innerHTML = data.map(item => (
+    '<li class="task-list__task" data-id="' + item.id + '">' +
+      item.value +
+    '</li>'
+  )).join('');
+});
+
+// register event listener on an input field
+document.querySelector('.task-input').addEventListener('change', function() {
+  // create task object
+  let task = {
+    id: +new Date,
+    value: this.value
   }
+  // add the new task to the store
+	store.added(task);
+});
+
+taskList.addEventListener('click', function(event) {
+	if (event.target.matches('.task-list__task')) {
+    // trigger store's removed action with the provided task's ID
+		store.removed(~~event.target.dataset.id);
+	}
+});
 ```
 
-in your code that uses MyStore:
-```
-  import MyStore from './my-store';
-  
-  let myStore = new MyStore();
-  ...
-  myStore.data // allows access to the stores data immediately
-  ...
-  myStore.on('changed', changeCallback) // be notified on state changes of the store (always receives the entire state)
-  ...
-  myStore.added('some data'); // triggers the 'added' action as defined in my-store.js and notifies changeCallback
+A working demo can be found in the [test](https://github.com/AndCake/glassbil/tree/master/test) directory.
+
+Debug
+-----
+
+Make sure to have [Redux devtools extension](https://github.com/zalmoxisus/redux-devtools-extension) installed, then you can use the following code:
+
+```js
+import MyStore from './my-store';
+import devtools from 'glassbil/devltools';
+
+const store = ENV !== 'production' ? devtools(new MyStore()) : new MyStore();
+
+// the rest can stay as is
+// ...
+
 ```
 
+Reporting Issues
+----------------
+
+Found a problem? Want a new feature? First of all, see if your issue or idea has [already been reported](https://github.com/andcake/glassbil/issues). If not, just open a [new clear and descriptive issue](https://github.com/andcake/glassbil/issues/new).
+
+License
+-------
+
+[MIT License](https://oss.ninja/mit/andcake)

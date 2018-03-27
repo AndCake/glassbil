@@ -1,10 +1,10 @@
 const scope = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : {};
 let eventRegistry = scope.__eventRegistry = scope.__eventRegistry || {};
 
-export function trigger(eventName, data) {
+export function trigger(eventName) {
     if (!eventRegistry[eventName]) return;
     for (var index = 0, length = eventRegistry[eventName].length, fn; fn = eventRegistry[eventName][index], index < length; index += 1) {
-        var result = fn(data);
+        var result = fn.apply(this, Array.prototype.slice.call(arguments, 1));
         if (result === false) {
             break;
         }
@@ -33,9 +33,10 @@ export function off(eventName, fn) {
 }
 
 export function one(eventName, fn) {
-    let callback = function(data) {
+    let _this = this;
+    let callback = function() {
         off(eventName, callback);
-        fn(data);
+        fn.apply(_this, Array.prototype.slice.call(arguments));
     };
     on(eventName, callback);
 }

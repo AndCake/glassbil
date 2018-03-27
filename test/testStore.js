@@ -2,7 +2,9 @@ import Store from '../src/store';
 
 export default class TestStore extends Store {
     constructor() {
-        super('test', {
+        super('test');
+
+        this.actions({
             added(currentState, entry, next) {
                 let newState = currentState.toJS();
                 newState.push(entry);
