@@ -3,9 +3,9 @@
 
 A minimal store similar to redux or flux
 
-* Small footprint
-* Framework agnostic
-* Immutable - by default
+* Small footprint - just 1.2 KB gzipped
+* Framework agnostic - works well with jQuery, Preact, or any other UI framework
+* Immutable - the contents of the store are in deep-freeze
 * Portable - actions can be moved to a common place and imported
 
 Installation
@@ -104,6 +104,12 @@ taskList.addEventListener('click', function(event) {
 ```
 
 A working demo can be found in the [test](https://github.com/AndCake/glassbil/tree/master/test) directory.
+
+### Why use immutable data?
+
+Bugs happen because developers write them. This just puts one more layer between you and your code exploding. Immutable data can't promise to help you avoid all bugs, but can help you reason about your state much easier!
+
+The immutability is implemented with minimal performance overhead while trying to stay close to the native object/array API.
 
 Debug
 -----

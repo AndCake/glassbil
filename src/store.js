@@ -23,8 +23,8 @@ function deepFreeze(obj) {
         // create a copy and deep freeze all entries
         obj = obj.slice(0).map(deepFreeze);
         // re-attach some important methods
-        ['map', 'forEach', 'find', 'indexOf', 'filter', 'some', 'every'].forEach(fn => {
-            properties[fn] = {value: Array.prototype[fn].bind(obj)};
+        ['map', 'forEach', 'find', 'indexOf', 'filter', 'some', 'every', 'lastIndexOf', 'slice'].forEach(fn => {
+            properties[fn] = {value: function () { return deepFreeze(Array.prototype[fn].apply(obj, arguments));}};
         });
     }
 
