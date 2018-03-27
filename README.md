@@ -118,7 +118,7 @@ Make sure to have [Redux devtools extension](https://github.com/zalmoxisus/redux
 
 ```js
 import MyStore from './my-store';
-import devtools from 'glassbil/devltools';
+import devtools from 'glassbil/devtools';
 
 const store = ENV !== 'production' ? devtools(new MyStore()) : new MyStore();
 
