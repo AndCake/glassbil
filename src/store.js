@@ -9,6 +9,11 @@ function mirror() {
     return this;
 }
 
+/**
+ * Create an immutable object lazily.
+ * @param {Object} obj
+ * @returns {Object} the immutable object created
+ */
 function deepFreeze(obj) {
     // if it's already frozen, don't bother going deep into it...
     if (obj === null || typeof obj.toJS === 'function' || typeof obj !== 'object') {
@@ -52,9 +57,13 @@ function bind(fn, self, lastParam) {
     }
 }
 
+/**
+ * A base store implementation supporting (dynamic) addition of actions and events for
+ * being notified of store state changes.
+ */
 export default class Store {
     constructor(name, actions) {
-        this.name = name || 'unnamed';
+        this.name = name || ('Unnamed' + Object.keys(data).length);
         this.triggered = false;
         Object.keys(events).forEach(event => {
             this[event] = function (eventName, context)  {
@@ -76,25 +85,35 @@ export default class Store {
         }
     }
 
+    /**
+     *
+     * @param {Object} actionDefinitions an object containing action functions
+     */
     actions(actionDefinitions) {
-        if (!actionDefinitions || typeof actionDefinitions !== 'object') return;
+        if (!actionDefinitions || typeof actionDefinitions !== 'object') return this.actionDefinitions && Object.keys(this.actionDefinitions) || [];
         let actionNames = Object.keys(actionDefinitions);
+        this.actionDefinitions = Object.assign({}, this.actionDefinitions || {}, actionDefinitions);
         for (let index = 0, action; action = actionDefinitions[actionNames[index]], index < actionNames.length; index += 1) {
             (function(actionName) {
                 this[actionName] = function(triggerData) {
                     // for asynchronous cases, provide a next function to handle state
                     // modification
-                    let newState = action(data[this.name].currentData, triggerData, bind(this.next, this, actionName));
+                    let newState = action.call(this, data[this.name].currentData, triggerData, bind(this.setState, this, actionName));
                     // if it was not done asynchronously
                     if (typeof newState !== 'undefined') {
                         // directly update the state
-                        this.next(newState, actionName);
+                        this.setState(newState, actionName);
                     }
                 }.bind(this);
             }.call(this, actionNames[index]))
         }
+        return Object.keys(this.actionDefinitions);
     }
 
+    /**
+     * getter for retrieving the store's current state.
+     * @returns {Object} the store's current state
+     */
     get data() {
         if (data[this.name]) {
             return data[this.name].currentData;
@@ -115,7 +134,13 @@ export default class Store {
         }
     }
 
-    next(newState, actionName) {
+    /**
+     * Sets the next new state of the store and notifies all listeners of the state change.
+     *
+     * @param {Object} newState the new state of the store - will be subjected to a deep-freeze
+     * @param {string} [actionName] the action that caused the state change
+     */
+    setState(newState, actionName = 'setState') {
         data[this.name].loaded = true;
         newState = deepFreeze(newState);
         if (newState !== data[this.name].currentData) {

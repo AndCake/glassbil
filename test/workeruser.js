@@ -1,7 +1,7 @@
-import TestStore from './testStore';
+import WorkerStore from '../lib/workerstub';
 import devtools from '../devtools';
 
-let store = devtools(new TestStore());
+let store = devtools(new WorkerStore('./worker-bundle.js'));
 
 store.on('changed', function(data) {
 	document.querySelector('ul').innerHTML = data.map(item => `

@@ -4,9 +4,9 @@
 A minimal store similar to redux or flux
 
 * Small footprint - just 1.2 KB gzipped
-* Framework agnostic - works well with jQuery, Preact, or any other UI framework
 * Immutable - the contents of the store are in deep-freeze
 * Portable - actions can be moved to a common place and imported
+* Framework agnostic - works well with jQuery, Preact, or any other UI framework
 
 Installation
 ------------
@@ -125,6 +125,208 @@ const store = ENV !== 'production' ? devtools(new MyStore()) : new MyStore();
 // the rest can stay as is
 // ...
 
+```
+
+Web Worker Support
+------------------
+
+Glassbil offers support to have your store run within a web worker and use it through the same interface. This will help you to separate data handling, network and other resource intensive tasks to be delegated to a different thread, thereby making your UI more responsive.
+
+For this, glassbil provides a module to turn a regular store into a web worker-based store, `glassbil/lib/workerize`. Please note, that custom events (so events other than the 'changed' event) will not be synchronized between the web worker and the main thread.
+
+Your main thread code can then instantiate and use this web worker store by handing the worker store's bundle URL into the worker stub module `glassbil/lib/workerstub`. The stub will synchronize all action calls and state changes as well as `changed` events between the main thread and the web worker.
+
+Example for a web worker store definition:
+
+```js
+// workerstore.js
+import TestStore from './testStore';
+import workerize from 'glassbil/lib/workerize';
+
+workerize(new TestStore());
+```
+
+You can then use it by utilizing the `WorkerStub` like so:
+
+```js
+// in the main thread
+import WorkerStore from 'glassbil/lib/workerstub';
+
+// the worker stub requires the URL to the actual bundled web worker store
+const testStore = new WorkerStore('./workerstore.js');
+
+// use your store as you normally would
+testStore.on('changed', data => /* do something */data);
+testStore.added('test');
+```
+
+API
+---
+
+### Class Store
+
+Methods available:
+
+#### constructor([name, [actions]]) : Store
+
+When creating a new store, you can hand it the name of your store and optionally, a set of actions to be created with it. This constructor would normally be used by the inheriting store class using `super(...)` to initialize the base store functionality.
+
+ * `name {string}` - the name of the store, since you can have multiple stores, use a unique identifier for the functionality of your store. If no name is provided, a unique name is generated for every instance.
+ * `actions {object}` - a set of custom actions that describe the capabilities of your store. The properties of the object should be the actions' functions. Every such function takes three arguments: `currentState`, `payload`, `next`. The `payload` argument is handed into the action when calling it from your code.
+
+Example:
+
+```js
+import Store from 'glassbil';
+
+export default class TaskStore extends Store {
+  constructor() {
+    // call the base store's constructor
+    super('task', {
+      // the actions
+      retrieved(currentState, payload, next) {
+        // ...
+      },
+      // additional actions
+      // ...
+    });
+  }
+}
+```
+
+#### actions([actions]) : Array
+
+Instead of statically providing the actions as part of the constructor call, you can also add actions at a later stage by calling the `actions()` method. This method will return the names of all currently defined actions for the store.
+
+* `actions {object}` - a set of custom actions that describe the capabilities of your store. The properties of the object should be the actions' functions. Every such function takes three arguments: `currentState`, `payload`, `next`. The `payload` argument is handed into the action when calling it from your code.
+
+Example for imported actions:
+
+```js
+import Store from 'glassbil';
+import actionDefinitions from './my-action-definitions';
+
+export default class TaskStore extends Store {
+  constructor() {
+    super('task');
+
+    console.log(this.actions(actionDefinitions));
+  }
+}
+```
+
+#### setState(newState[, actionName]) : void
+
+Defines the new state of the store. The new state will be frozen and modifications of it are only possible by setting a new state using `setState(...)`. The frozen state object has a `.toJS()` function to retrieve a modifiable copy of the state, which can then be used to derive a new state based on the current state.
+
+This method will also notify any callbacks that have registered to the `changed` event of the store.
+
+* `newState {object}` - the new state the store should be in
+* `actionName {string}` - a descriptive name to show what caused state change
+
+Example for hydrating the store from a localStorage object:
+
+```js
+import Store from 'glassbil';
+
+export default class IcecreamStore extends Store {
+  constructor() {
+    super('icecream');
+
+    let storeData = JSON.parse(localStorage.getItem('icecream-store')) || {};
+    this.setState(storeData, '@@INIT');
+  }
+}
+```
+
+#### trigger(eventName[, ...args]) : void
+
+Triggers the given event and transfers any data that is handed into the event listeners callback functions.
+
+* `eventName {string}` - the name of the event to trigger
+
+Example:
+
+```js
+import IcecreamStore from './icecreamstore';
+
+let store = new IcecreamStore();
+
+store.on('distribute', function (...args) {
+  // will log ["snow cone", "waffle", "banana boat"]
+  console.log(args);
+});
+
+// trigger the "distribute" event with some data
+store.trigger('distribute', 'snow cone', 'waffle', 'banana boat');
+
+```
+
+#### on(eventName, fn) : void
+
+Registers an event handler for a given event triggered by the store. Every time the event is triggered, it will call the `fn` function with the provided data.
+
+The only pre-defined event name is `changed`, which is used whenever the store state changed.
+
+* `eventName {string}` - the name of the event to listen for
+* `fn {Function}` - the callback function to be notified once the given event is triggered
+
+Example:
+
+```js
+import TaskStore from './taskstore';
+
+let store = new TaskStore();
+
+// listen for the "testing" event
+store.on('testing', function (data) {
+  // will log "Hello" and "World!"
+  console.log(data, args);
+});
+
+// trigger the "testing" event multiple times
+store.trigger('testing', 'Hello');
+store.trigger('testing', 'World!');
+```
+
+#### one(eventName, fn) : void
+
+Registers an event handler for a given event triggered by the store for only one execution, then unregisters it again. The function `fn` will be called at most once - the first time the event is triggered.
+
+* `eventName {string}` - the name of the event to listen for
+* `fn {Function}` - the callback function to be notified once the given event is triggered
+
+Example:
+
+```js
+import TaskStore from './taskstore';
+
+let store = new TaskStore();
+
+store.one('changed', function (data) {
+  // will only log "Hello"
+  console.log(data);
+});
+
+store.setState('Hello');
+store.setState('World!');
+```
+
+#### off(eventName[, fn]) : void
+
+Unregisters an event handler previously registered via `.on()`. If the `fn` parameter is omitted, all event handlers are unregistered for the given event.
+
+Example:
+
+```js
+...
+function buyIcecream(icecream) {
+  // eat ice cream
+  // ...
+}
+store.on('ring-bell', buyIcecream);
+...
+store.off('ring-bell', buyIcecream);
 ```
 
 Reporting Issues

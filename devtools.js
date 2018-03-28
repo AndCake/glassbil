@@ -19,12 +19,12 @@ export default function glassbilDevTools(store) {
 			}
 			ignoreState = message.payload.type === 'JUMP_TO_ACTION' || message.payload.type === 'JUMP_TO_STATE';
 			if (message.state === '{"length":0}') message.state = '[]';
-			store.next(JSON.parse(message.state));
+			store.setState(JSON.parse(message.state));
 		}
 	});
 	store.devtools.init(store.data);
 	store.on('changed', function (data, actionName) {
-		actionName = actionName || 'next';
+		actionName = actionName || 'setState';
 		if (!ignoreState) {
 			store.devtools.send(actionName, data.toJS());
 		} else {
