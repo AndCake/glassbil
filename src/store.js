@@ -115,7 +115,7 @@ export default class Store {
      * @returns {Object} the store's current state
      */
     get data() {
-        if (data[this.name]) {
+        if (data[this.name] && data[this.name].loaded) {
             return data[this.name].currentData;
         } else {
             return null;
@@ -124,12 +124,12 @@ export default class Store {
 
     loaded() {
         let loaded = Object.keys(data).filter(key => data[key].loaded).length;
-        if (loaded === Object.keys(data).length && !this.triggered) {
+        if (loaded === Object.keys(data).length && !data.__triggered) {
             let result = {};
             Object.keys(data).map(key => {
                 result[key] = data[key].currentData.toJS();
             });
-            this.triggered = true;
+            data.__triggered = true;
             trigger('global:data-loaded', result);
         }
     }
