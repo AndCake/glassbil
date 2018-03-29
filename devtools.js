@@ -10,7 +10,12 @@ export default function glassbilDevTools(store) {
 	}
 
 	if (store.devtools) return store;
-	store.devtools = extension.connect();
+	store.devtools = extension.connect({
+		name: store.name,
+		features: {
+			skip: false
+		}
+	});
 	store.devtools.subscribe(function (message) {
 		if (message.type === 'DISPATCH' && message.state) {
 			if (message.payload.type === 'TOGGLE_ACTION') {
