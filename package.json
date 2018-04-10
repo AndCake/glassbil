@@ -2,7 +2,6 @@
   "name": "glassbil",
   "version": "1.0.0",
   "license": "MIT",
-  "module": "src/store.js",
   "main": "dist/main.js",
   "scripts": {
     "start": "rollup -c rollup.config.js",
