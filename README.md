@@ -266,7 +266,7 @@ store.trigger('distribute', 'snow cone', 'waffle', 'banana boat');
 
 Registers an event handler for a given event triggered by the store. Every time the event is triggered, it will call the `fn` function with the provided data.
 
-The only pre-defined event name is `changed`, which is used whenever the store state changed.
+The only pre-defined event names are `changed`, which is used whenever the store state changed. Additionally, there is an event name `global:data-loaded`, which is fired once all stores have been initialized (can be used e.g. for rendering components after asynchronous store data was successfully retrieved).
 
 * `eventName {string}` - the name of the event to listen for
 * `fn {Function}` - the callback function to be notified once the given event is triggered
@@ -328,6 +328,42 @@ store.on('ring-bell', buyIcecream);
 ...
 store.off('ring-bell', buyIcecream);
 ```
+
+### loaded() : void
+
+Checks if all stores have been successfully initialized. Once that is the case, an event `global:data-loaded` is fired, providing the data from all stores. This is especially helpful to prepopulate the stores when doing server-side rendering.
+
+Example:
+
+```
+import Glassbil from 'glassbil';
+
+const rootStore = new Glassbil();
+
+// ...
+// execute your business logic using all required sub-stores
+// ...
+
+rootStore.on('global:data-loaded', data => {
+  // __glassbilStoreData is automatically picked up by all glassbil instances as default-value on page load
+  response.writer.write('<script>window.__glassbilStoreData = ' + JSON.stringify(data) + '</script>');
+});
+rootStore.loaded();
+```
+
+#### reset() : boolean
+
+Re-initializes all data and events from all stores. Basically creates a clean slate - best for cached server-side requests. **Please note:** resetting only works on instances that have been created directly of the Glassbil store but not of any inheriting stores.
+
+Example:
+
+```js
+import Glassbil from 'glassbil';
+
+const rootStore = new Glassbil();
+rootStore.reset();
+```
+
 
 Reporting Issues
 ----------------

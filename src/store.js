@@ -16,7 +16,7 @@ function mirror() {
  */
 function deepFreeze(obj) {
     // if it's already frozen, don't bother going deep into it...
-    if (obj === null || typeof obj.toJS === 'function' || typeof obj !== 'object') {
+    if (obj === null || typeof obj === 'undefined' || typeof obj.toJS === 'function' || typeof obj !== 'object') {
         return obj;
     }
 
@@ -64,8 +64,8 @@ function bind(fn, self, lastParam) {
 export default class Store {
     constructor(name, actions) {
         this.name = name || ('Unnamed' + Object.keys(data).length);
-        this.triggered = false;
         Object.keys(events).forEach(event => {
+            if (event === 'resetEvents') return;
             this[event] = function (eventName, context)  {
                 if (eventName.indexOf(':') >= 0) {
                     events[event](eventName, context);
@@ -132,6 +132,22 @@ export default class Store {
             data.__triggered = true;
             trigger('global:data-loaded', result);
         }
+    }
+
+    /**
+     * re-initializes all data and events from all stores.
+     * Basically creates a clean slate - best for cached server-side requests.
+     * Please note that resetting only works on instances that have been created directly of the store but not of inheriting stores.
+     *
+     * @returns {Boolean} true if everything was successfully reset. Else false.
+     */
+    reset() {
+        if (Object.getPrototypeOf(this) === Store.prototype) {
+            data = scope.__glassbilStoreData = {};
+            events.resetEvents();
+            return true;
+        }
+        return false;
     }
 
     /**
