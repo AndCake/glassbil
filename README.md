@@ -210,7 +210,7 @@ export default class TaskStore extends Store {
   constructor() {
     super('task');
 
-    console.log(this.actions(actionDefinitions));
+    this.actions(actionDefinitions);
   }
 }
 ```
