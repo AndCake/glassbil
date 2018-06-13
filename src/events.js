@@ -40,3 +40,7 @@ export function one(eventName, fn) {
     };
     on(eventName, callback);
 }
+
+export function resetEvents() {
+    eventRegistry = scope.__eventRegistry = {};
+}
