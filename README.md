@@ -65,6 +65,40 @@ export default class MyStore extends Store {
 }
 ```
 
+or alternatively in ES5:
+
+```js
+// import the base store
+var Store = require('glassbil');
+
+// create your custom store
+MyStore.prototype = Object.create(Store.prototype, {constructor: MyStore});
+function MyStore() {
+  Store.call(this, 'mystore');
+
+  this.actions({
+    added: function added(currentState, dataAdded, next) {
+      var newState = currentState.toJS();
+      newState.push(dataAdded);
+      return newState;
+    },
+    removed: function removed(currentState, dataAdded, next) {
+      var newState = currentState.toJS();
+      // locate the element with the provided ID
+      var found = newState.filter(function (el) { return el.id === id; })[0];
+      if (found) {
+          // remove it from the new state
+          newState.splice(newState.indexOf(found), 1);
+      }
+      return newState;
+    },
+    // additional actions...
+  })
+}
+
+module.exports = MyStore;
+```
+
 Usage
 -----
 
