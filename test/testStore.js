@@ -11,12 +11,20 @@ export default class TestStore extends Store {
                 return newState;
             },
             removed(currentState, id, next) {
-                var newState = currentState.toJS();
+                let newState = currentState.toJS();
                 let found = newState.find(el => el.id === id);
                 if (found) {
                     newState.splice(newState.indexOf(found), 1);
                 }
                 next(newState);
+            },
+            updated(currentState, entry, next) {
+                let newState = currentState.toJS();
+                let found = newState.find(el => el.id === entry.id);
+                if (found) {
+                    Object.assign(found, entry);
+                }
+                return newState;
             }
         });
     }

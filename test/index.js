@@ -1,8 +1,14 @@
 import {expect} from 'chai';
 import TestStore from './testStore.js';
+import Store from '../src/store';
 
 describe('Store functionality', () => {
-    let ts = new TestStore();
+    let ts;
+
+    beforeEach(function () {
+        new Store().reset();
+        ts = new TestStore();
+    });
 
     it('provides all defined actions', () => {
         expect(ts.added).to.be.a('function');
@@ -31,5 +37,56 @@ describe('Store functionality', () => {
         ts.removed(32);
         ts.removed(12);
         expect(eventFired).to.equal(2);
+    });
+
+    describe('watch', () => {
+        it('is able to watch changes to non-existing properties', () => {
+            let addedValue = {
+                id: 12, 
+                name: 'Chicken Sandwich'
+            };
+
+            return new Promise(function (resolve, reject) {
+                ts.watch('0.name', function (newValue) {
+                    expect(newValue).to.equal(addedValue.name);
+                    resolve();
+                });
+                ts.added(addedValue);
+            });            
+        });
+
+        it('is able to watch changes to existing properties', () => {
+            ts.added({id: 12, name: 'Karl'});
+            return new Promise(function (resolve, reject) {
+                ts.watch('0.name', function (newValue) {
+                    expect(newValue).to.equal('Minkelhutz');
+                    resolve();
+                });
+                ts.updated({id: 12, name: 'Minkelhutz'});
+            });
+        });
+
+        it('is able to unwatch again', () => {
+            let addedValue = {
+                id: 12, 
+                name: 'Chicken Sandwich'
+            };
+            let unwatch;
+            let callCount = 0;
+
+            return new Promise(function (resolve, reject) {
+                unwatch = ts.watch('0.name', function (newValue) {
+                    callCount += 1;
+                    expect(newValue).to.equal(addedValue.name);
+                    resolve();
+                });
+                ts.added(addedValue);
+            }).then(function () {
+                unwatch();
+                addedValue.name = 'Minkelhutz';
+                ts.updated(addedValue);
+                expect(callCount).to.equal(1);
+            });
+        });
     });
 });

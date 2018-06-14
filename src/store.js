@@ -9,6 +9,17 @@ function mirror() {
     return this;
 }
 
+function getProperty(path, object) {
+    let result = object;
+    let fragments = path.split('.');
+
+    while (result && fragments.length > 0) {
+        result = result[fragments.shift()];
+    }
+
+    return result;
+}
+
 /**
  * Create an immutable object lazily.
  * @param {Object} obj
@@ -108,6 +119,30 @@ export default class Store {
             }.call(this, actionNames[index]))
         }
         return Object.keys(this.actionDefinitions);
+    }
+
+    /**
+     * watches for changes in the given object path and calls the callback
+     * @param {string} path the object path to watch for changes in
+     * @param {Function} callback the function to be called once there are changes
+     * @param {Function} comparator an optional parameter indicating how to detect if there are changes (if the function returns false, it's treated as a change)
+     * @returns {Function} a unwatch function to stop watching the given path
+     */
+    watch(path, callback, comparator) {
+        comparator = comparator || ((a, b) => a === b);
+        let currentValue = getProperty(path, this.data);
+        let eventHandler = function (data) {
+            let newValue = getProperty(path, data);
+            if (!comparator(currentValue, newValue)) {
+                callback(newValue, currentValue, data);
+            }
+        };
+
+        this.on(this.name + '-store:changed', eventHandler);
+
+        return function unwatch() {
+            this.off(this.name + '-store:changed', eventHandler);
+        }.bind(this);
     }
 
     /**
