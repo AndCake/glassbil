@@ -134,7 +134,7 @@ export default class Store {
         let eventHandler = function (data) {
             let newValue = getProperty(path, data);
             if (!comparator(currentValue, newValue)) {
-                callback(newValue, oldValue, data);
+                callback(newValue, currentValue, data);
             }
         };
 

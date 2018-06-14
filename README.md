@@ -239,6 +239,37 @@ export default class IcecreamStore extends Store {
 }
 ```
 
+#### watch(path, callback, comparator) : Function
+
+Watches for changes in the given object path and calls the callback. It returns a function to remove the watcher again.
+
+ * `path {string}` - the object path to watch for changes in
+ * `callback {Function}` - the function to be called once there are changes, receives three arguments: `newValue`, `oldValue`, `state`
+ * `comparator {Function}` - indicates how to detect if there are changes (if the function returns false, it's treated as a change) [OPTIONAL]
+
+Example:
+
+```js
+  import IcecreamStore from './icecreamstore';
+  let store = IcecreamStore();
+
+  store.watch('flavours.strawberry.stockCount', function (currentStrawberryStock, previousStrawberryStock, state) {
+    if (currentStrawberryStock > previousStrawberryStock) {
+      console.log('Got fresh strawberry ice cream!');
+    } else if (currentStrawberryStock < previousStrawberryStock) {
+      console.log('Sells like crazy!');
+    }
+  });
+
+  // ...
+  // trigger the custom 'soldCone' action, which modifies the stockCount of the given flavour type
+  store.soldCone({
+    type: 'strawberry',
+    count: 1
+  });
+```
+
+
 #### trigger(eventName[, ...args]) : void
 
 Triggers the given event and transfers any data that is handed into the event listeners callback functions.
